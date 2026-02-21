@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sacred Global - Live Device Status</title>
+    <meta name="description" content="Sacred Global — real-time status of Sacred devices worldwide">
+    <title>Sacred Global — Live Device Status</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,13 +16,13 @@
                     <span class="logo-icon">🐰</span>
                 </div>
             </a>
-            
+
             <div class="stats-bar">
                 <div class="stat-item">
                     <span class="stat-value" id="totalBoxes">0</span>
                     <span class="stat-label">Total Boxes</span>
                 </div>
-                <div class="stat-item active">
+                <div class="stat-item highlight">
                     <span class="stat-value" id="activeBoxes">0</span>
                     <span class="stat-label">Active Now</span>
                 </div>
@@ -34,7 +35,7 @@
 
         <main>
             <div id="globeViz"></div>
-            
+
             <div class="controls">
                 <button id="zoomIn" class="control-btn" title="Zoom In">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -52,7 +53,7 @@
                     </svg>
                 </button>
             </div>
-            
+
             <div class="legend">
                 <h3>Device Status</h3>
                 <div class="legend-items">
@@ -72,23 +73,23 @@
             </div>
 
             <div class="info-panel" id="infoPanel">
-                <button class="close-btn" id="closeBtn">×</button>
+                <button class="close-btn" id="closeBtn">&times;</button>
                 <h3 id="deviceLocation">Device Details</h3>
                 <div class="info-content">
                     <div class="info-row">
-                        <span class="info-label">Status:</span>
+                        <span class="info-label">Status</span>
                         <span class="info-value" id="deviceStatus">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Current Session:</span>
+                        <span class="info-label">Current Session</span>
                         <span class="info-value" id="sessionTime">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Total Time:</span>
+                        <span class="info-label">Total Time</span>
                         <span class="info-value" id="totalTime">-</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Last Active:</span>
+                        <span class="info-label">Last Active</span>
                         <span class="info-value" id="lastActive">-</span>
                     </div>
                 </div>
@@ -97,12 +98,13 @@
 
         <footer>
             <p class="update-time">Last updated: <span id="lastUpdate">Never</span></p>
-            <p class="instructions">Click & drag to rotate • Scroll to zoom • Click a device for details</p>
+            <p class="instructions">Click &amp; drag to rotate &bull; Scroll to zoom &bull; Click a device for details</p>
         </footer>
     </div>
 
-    <!-- Globe.GL Library -->
-    <script src="//unpkg.com/globe.gl"></script>
+    <!-- Three.js must load before Globe.GL so the global THREE is available for custom scene objects -->
+    <script src="https://unpkg.com/three@0.169.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/globe.gl@2.42.4"></script>
     <script src="app.js"></script>
 </body>
 </html>
