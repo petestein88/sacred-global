@@ -15,13 +15,26 @@ class SacredGlobe {
     // ----------------------------------------------------------------
     async init() {
         try {
+            // Wait for Globe library to be available
+            if (typeof Globe === 'undefined') {
+                console.error('[SacredGlobe] Globe.GL not loaded. Check CDN or network.');
+                document.getElementById('loading').textContent = 'Failed to load globe library. Check your connection.';
+                return;
+            }
+
             await this.loadDevices();
             this.createGlobe();
             this.setupControls();
             this.updateStats();
             this._refreshTimer = setInterval(() => this.refreshData(), 30_000);
+
+            // Hide loading indicator
+            const loader = document.getElementById('loading');
+            if (loader) loader.style.display = 'none';
         } catch (err) {
             console.error('[SacredGlobe] init failed:', err);
+            const loader = document.getElementById('loading');
+            if (loader) loader.textContent = `Error: ${err.message}`;
         }
     }
 
@@ -46,7 +59,7 @@ class SacredGlobe {
             { lat:  43.6532, lng:  -79.3832, city: 'Toronto',       country: 'Canada',       status: 'offline', sessionTime:   0, totalTime: 1500, lastActive: '8 hours ago' },
             { lat:  19.0760, lng:   72.8777, city: 'Mumbai',        country: 'India',        status: 'active',  sessionTime: 201, totalTime: 7200, lastActive: 'Now'         },
             { lat:  25.2048, lng:   55.2708, city: 'Dubai',         country: 'UAE',          status: 'active',  sessionTime: 112, totalTime: 4100, lastActive: 'Now'         },
-            { lat: -23.5505, lng:  -46.6333, city: 'S\u00e3o Paulo',country: 'Brazil',       status: 'active',  sessionTime:  95, totalTime: 3600, lastActive: 'Now'         },
+            { lat: -23.5505, lng:  -46.6333, city: 'São Paulo',     country: 'Brazil',       status: 'active',  sessionTime:  95, totalTime: 3600, lastActive: 'Now'         },
             { lat:  19.4326, lng:  -99.1332, city: 'Mexico City',   country: 'Mexico',       status: 'idle',    sessionTime:   0, totalTime: 2200, lastActive: '30 min ago'  },
             { lat: -33.9249, lng:   18.4241, city: 'Cape Town',     country: 'South Africa', status: 'active',  sessionTime:  87, totalTime: 2900, lastActive: 'Now'         },
         ];
@@ -222,4 +235,7 @@ class SacredGlobe {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => new SacredGlobe());
+// Wait for both DOM and all scripts (including Globe.GL from CDN) to be ready
+window.addEventListener('load', () => {
+    new SacredGlobe();
+});

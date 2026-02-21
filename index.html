@@ -34,7 +34,9 @@
         </header>
 
         <main>
-            <div id="globeViz"></div>
+            <div id="globeViz">
+                <div class="loading" id="loading">Loading globe...</div>
+            </div>
 
             <div class="controls">
                 <button id="zoomIn" class="control-btn" title="Zoom In">
@@ -102,8 +104,8 @@
         </footer>
     </div>
 
-    <!-- Globe.GL (bundles Three.js internally — no separate THREE script needed) -->
-    <script src="https://unpkg.com/globe.gl@2.42.4"></script>
+    <!-- Globe.GL (bundles Three.js internally) -->
+    <script src="https://unpkg.com/globe.gl@2.42.4/dist/globe.gl.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
