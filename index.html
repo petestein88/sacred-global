@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sacred Global - Live Device Status</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="https://sacred.systems" class="logo-link" aria-label="Return to Sacred home">
+                <div class="logo">
+                    <span class="logo-text">sacred</span>
+                    <span class="logo-icon">🐰</span>
+                </div>
+            </a>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-label">Active Devices:</span>
+                    <span class="status-value" id="activeDevices">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Countries:</span>
+                    <span class="status-value" id="countriesCount">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Total Sessions:</span>
+                    <span class="status-value" id="totalSessions">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="globe-container">
+                <canvas id="globeCanvas"></canvas>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading global status...</p>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <h3>Device Status</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-color active"></span>
+                        <span>Active Session</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color idle"></span>
+                        <span>Idle</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color offline"></span>
+                        <span>Offline</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel">
+                <div class="info-content">
+                    <h3 id="locationName">Select a device</h3>
+                    <div class="info-stats">
+                        <div class="info-stat">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value" id="deviceStatus">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-label">Current Session:</span>
+                            <span class="info-value" id="sessionTime">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-label">Total Time:</span>
+                            <span class="info-value" id="totalTime">-</span>
+                        </div>
+                        <div class="info-stat">
+                            <span class="info-label">Last Active:</span>
+                            <span class="info-value" id="lastActive">-</span>
+                        </div>
+                    </div>
+                    <button class="close-btn" id="closeBtn">&times;</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p class="update-time">Last updated: <span id="lastUpdate">Never</span></p>
+            <p class="copyright">&copy; 2026 Sacred. Live global device monitoring.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
