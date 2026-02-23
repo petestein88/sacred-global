@@ -26,7 +26,6 @@ class SacredGlobe {
             this.createGlobe();
             this.setupControls();
             this.updateStats();
-            this.startTerminatorAnimation();
             this._refreshTimer = setInterval(() => this.refreshData(), 30_000);
 
             // Hide loading indicator
@@ -67,65 +66,11 @@ class SacredGlobe {
     }
 
     // ----------------------------------------------------------------
-    // Solar calculations for terminator line
-    // ----------------------------------------------------------------
-    getSunPosition(date) {
-        const startOfYear = new Date(date.getFullYear(), 0, 0);
-        const dayOfYear = Math.floor((date - startOfYear) / 86400000);
-        const declination = -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
-        const hours = date.getUTCHours();
-        const minutes = date.getUTCMinutes();
-        const seconds = date.getUTCSeconds();
-        const hoursDecimal = hours + minutes / 60 + seconds / 3600;
-        const longitude = (hoursDecimal / 24) * 360 - 180;
-        return { lat: declination, lng: longitude };
-    }
-
-    // Generate terminator line coordinates (improved calculation)
-    generateTerminatorLine() {
-        const sunPos = this.getSunPosition(new Date());
-        const points = [];
-        
-        console.log('[Terminator] Sun position:', sunPos);
-        
-        // Generate points along the terminator circle
-        for (let i = 0; i <= 360; i += 2) {
-            const angle = i * Math.PI / 180;
-            
-            // Calculate point 90 degrees from sun position
-            const sunLatRad = sunPos.lat * Math.PI / 180;
-            const sunLngRad = sunPos.lng * Math.PI / 180;
-            
-            // Terminator is a great circle 90 degrees from sun
-            const lat = Math.asin(
-                Math.sin(sunLatRad) * Math.cos(Math.PI / 2) +
-                Math.cos(sunLatRad) * Math.sin(Math.PI / 2) * Math.cos(angle)
-            ) * 180 / Math.PI;
-            
-            const lng = sunLngRad + Math.atan2(
-                Math.sin(angle) * Math.sin(Math.PI / 2) * Math.cos(sunLatRad),
-                Math.cos(Math.PI / 2) - Math.sin(sunLatRad) * Math.sin(lat * Math.PI / 180)
-            );
-            
-            const lngDeg = ((lng * 180 / Math.PI + 540) % 360) - 180;
-            
-            if (!isNaN(lat) && !isNaN(lngDeg)) {
-                points.push({ lat, lng: lngDeg });
-            }
-        }
-        
-        console.log('[Terminator] Generated', points.length, 'points');
-        return points;
-    }
-
-    // ----------------------------------------------------------------
     // Globe setup
     // ----------------------------------------------------------------
     createGlobe() {
         const el = document.getElementById('globeViz');
         if (!el) throw new Error('#globeViz element not found');
-
-        const terminatorLine = this.generateTerminatorLine();
 
         this.globe = Globe()
             (el)
@@ -136,13 +81,6 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
-            // Terminator line - bright and thick
-            .pathsData([terminatorLine])
-            .pathColor(() => '#FFCC00')
-            .pathStroke(3)
-            .pathDashLength(1)
-            .pathDashGap(0)
-            .pathDashAnimateTime(0)
             // Device dots
             .pointsData(this.devices)
             .pointLat('lat')
@@ -180,19 +118,6 @@ class SacredGlobe {
                 .width(el.clientWidth)
                 .height(el.clientHeight);
         });
-    }
-
-    // ----------------------------------------------------------------
-    // Terminator animation (updates in real-time)
-    // ----------------------------------------------------------------
-    startTerminatorAnimation() {
-        const updateTerminator = () => {
-            const line = this.generateTerminatorLine();
-            this.globe.pathsData([line]);
-        };
-
-        // Update every 60 seconds
-        setInterval(updateTerminator, 60000);
     }
 
     // ----------------------------------------------------------------
