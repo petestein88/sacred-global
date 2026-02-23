@@ -70,64 +70,37 @@ class SacredGlobe {
     // Solar calculations for terminator line
     // ----------------------------------------------------------------
     getSunPosition(date) {
-        // Simplified solar position calculation
         const startOfYear = new Date(date.getFullYear(), 0, 0);
         const dayOfYear = Math.floor((date - startOfYear) / 86400000);
-        
-        // Solar declination (Earth's tilt)
         const declination = -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
-        
-        // Solar hour angle (Earth's rotation)
         const hours = date.getUTCHours();
         const minutes = date.getUTCMinutes();
         const seconds = date.getUTCSeconds();
         const hoursDecimal = hours + minutes / 60 + seconds / 3600;
-        
-        // Convert to longitude (-180 to 180)
         const longitude = (hoursDecimal / 24) * 360 - 180;
-        
         return { lat: declination, lng: longitude };
     }
 
-    // Generate hex grid for day side illumination
-    generateDaySideHexes() {
+    // Generate terminator line coordinates
+    generateTerminatorLine() {
         const sunPos = this.getSunPosition(new Date());
-        const hexes = [];
+        const points = [];
         
-        // Create a grid of hexagons on the day side
-        for (let lat = -85; lat <= 85; lat += 8) {
-            for (let lng = -180; lng <= 180; lng += 8) {
-                // Calculate if this point is on the day side
-                const angle = this.calculateSolarAngle(lat, lng, sunPos);
-                
-                // If angle < 90 degrees, it's daytime
-                if (angle < 90) {
-                    hexes.push({
-                        lat: lat,
-                        lng: lng,
-                        intensity: Math.cos(angle * Math.PI / 180) // Brighter near subsolar point
-                    });
-                }
+        // Generate points along the terminator (90 degrees from sun)
+        for (let lng = -180; lng <= 180; lng += 1) {
+            // Calculate latitude where sun angle is 90 degrees (on horizon)
+            const lngRad = (lng - sunPos.lng) * Math.PI / 180;
+            const sunLatRad = sunPos.lat * Math.PI / 180;
+            
+            // Using spherical geometry to find terminator
+            const lat = Math.atan(-Math.cos(lngRad) / Math.tan(sunLatRad)) * 180 / Math.PI;
+            
+            if (!isNaN(lat) && Math.abs(lat) <= 90) {
+                points.push({ lat, lng });
             }
         }
         
-        return hexes;
-    }
-
-    calculateSolarAngle(lat, lng, sunPos) {
-        // Convert to radians
-        const lat1 = lat * Math.PI / 180;
-        const lng1 = lng * Math.PI / 180;
-        const lat2 = sunPos.lat * Math.PI / 180;
-        const lng2 = sunPos.lng * Math.PI / 180;
-        
-        // Great circle distance (solar zenith angle)
-        const angle = Math.acos(
-            Math.sin(lat1) * Math.sin(lat2) +
-            Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2 - lng1)
-        );
-        
-        return angle * 180 / Math.PI;
+        return points;
     }
 
     // ----------------------------------------------------------------
@@ -146,15 +119,13 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
-            // Daytime hexagons (terminator effect)
-            .hexBinPointsData(this.generateDaySideHexes())
-            .hexBinPointLat('lat')
-            .hexBinPointLng('lng')
-            .hexBinPointWeight('intensity')
-            .hexAltitude(0.001)
-            .hexTopColor(() => 'rgba(255, 255, 100, 0.3)')
-            .hexSideColor(() => 'rgba(255, 255, 100, 0.15)')
-            .hexBinResolution(4)
+            // Terminator line
+            .pathsData([this.generateTerminatorLine()])
+            .pathColor(() => 'rgba(255, 204, 0, 0.6)')
+            .pathStroke(1.5)
+            .pathDashLength(1)
+            .pathDashGap(0)
+            .pathDashAnimateTime(0)
             // Device dots
             .pointsData(this.devices)
             .pointLat('lat')
@@ -199,11 +170,11 @@ class SacredGlobe {
     // ----------------------------------------------------------------
     startTerminatorAnimation() {
         const updateTerminator = () => {
-            const hexes = this.generateDaySideHexes();
-            this.globe.hexBinPointsData(hexes);
+            const line = this.generateTerminatorLine();
+            this.globe.pathsData([line]);
         };
 
-        // Update every 60 seconds (terminator moves slowly)
+        // Update every 60 seconds
         setInterval(updateTerminator, 60000);
     }
 
