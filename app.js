@@ -6,7 +6,6 @@ class SacredGlobe {
         this.globe         = null;
         this.devices       = [];
         this._refreshTimer = null;
-        this.solarCalculator = null;
 
         this.init();
     }
@@ -23,14 +22,10 @@ class SacredGlobe {
                 return;
             }
 
-            // Load solar calculator
-            await this.loadSolarCalculator();
-            
             await this.loadDevices();
             this.createGlobe();
             this.setupControls();
             this.updateStats();
-            this.startSolarAnimation();
             this._refreshTimer = setInterval(() => this.refreshData(), 30_000);
 
             // Hide loading indicator
@@ -41,32 +36,6 @@ class SacredGlobe {
             const loader = document.getElementById('loading');
             if (loader) loader.textContent = `Error: ${err.message}`;
         }
-    }
-
-    // ----------------------------------------------------------------
-    // Load solar-calculator library dynamically
-    // ----------------------------------------------------------------
-    async loadSolarCalculator() {
-        return new Promise((resolve, reject) => {
-            if (typeof solar !== 'undefined') {
-                this.solarCalculator = solar;
-                resolve();
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/solar-calculator@latest/dist/browser/solar.min.js';
-            script.onload = () => {
-                this.solarCalculator = window.solar;
-                console.log('[SacredGlobe] Solar calculator loaded');
-                resolve();
-            };
-            script.onerror = () => {
-                console.warn('[SacredGlobe] Solar calculator failed to load, terminator disabled');
-                resolve(); // Don't fail the whole app
-            };
-            document.head.appendChild(script);
-        });
     }
 
     // ----------------------------------------------------------------
@@ -97,30 +66,11 @@ class SacredGlobe {
     }
 
     // ----------------------------------------------------------------
-    // Solar terminator calculation (using solar-calculator library)
-    // ----------------------------------------------------------------
-    getSunPosition(dt) {
-        if (!this.solarCalculator) return [0, 0];
-        
-        const day = new Date(+dt).setUTCHours(0, 0, 0, 0);
-        const t = this.solarCalculator.century(dt);
-        const longitude = (day - dt) / 864e5 * 360 - 180;
-        return [
-            longitude - this.solarCalculator.equationOfTime(t) / 4,
-            this.solarCalculator.declination(t)
-        ];
-    }
-
-    // ----------------------------------------------------------------
     // Globe setup
     // ----------------------------------------------------------------
     createGlobe() {
         const el = document.getElementById('globeViz');
         if (!el) throw new Error('#globeViz element not found');
-
-        // Get initial sun position
-        const sunPos = this.getSunPosition(new Date());
-        this.solarTile = { pos: sunPos };
 
         this.globe = Globe()
             (el)
@@ -131,26 +81,6 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
-            // Solar terminator tile (if solar calculator loaded)
-            .tilesData(this.solarCalculator ? [this.solarTile] : [])
-            .tileLng(d => d.pos[0])
-            .tileLat(d => d.pos[1])
-            .tileAltitude(0.005)
-            .tileWidth(180)
-            .tileHeight(180)
-            .tileUseGlobeProjection(false)
-            .tileMaterial(() => {
-                // Need to import THREE for MeshLambertMaterial
-                if (typeof THREE !== 'undefined') {
-                    return new THREE.MeshLambertMaterial({
-                        color: '#ffff00',
-                        opacity: 0.15,
-                        transparent: true
-                    });
-                }
-                return null;
-            })
-            .tilesTransitionDuration(0)
             // Device dots
             .pointsData(this.devices)
             .pointLat('lat')
@@ -188,22 +118,6 @@ class SacredGlobe {
                 .width(el.clientWidth)
                 .height(el.clientHeight);
         });
-    }
-
-    // ----------------------------------------------------------------
-    // Solar terminator animation (updates sun position)
-    // ----------------------------------------------------------------
-    startSolarAnimation() {
-        if (!this.solarCalculator) return;
-
-        const updateSolarPosition = () => {
-            const dt = new Date();
-            this.solarTile.pos = this.getSunPosition(dt);
-            this.globe.tilesData([this.solarTile]);
-        };
-
-        // Update every 60 seconds
-        setInterval(updateSolarPosition, 60000);
     }
 
     // ----------------------------------------------------------------
