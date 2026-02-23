@@ -6,7 +6,6 @@ class SacredGlobe {
         this.globe         = null;
         this.devices       = [];
         this._refreshTimer = null;
-        this.solarTile     = null; // For terminator
 
         this.init();
     }
@@ -90,16 +89,53 @@ class SacredGlobe {
         return { lat: declination, lng: longitude };
     }
 
+    // Generate hex grid for day side illumination
+    generateDaySideHexes() {
+        const sunPos = this.getSunPosition(new Date());
+        const hexes = [];
+        
+        // Create a grid of hexagons on the day side
+        for (let lat = -85; lat <= 85; lat += 8) {
+            for (let lng = -180; lng <= 180; lng += 8) {
+                // Calculate if this point is on the day side
+                const angle = this.calculateSolarAngle(lat, lng, sunPos);
+                
+                // If angle < 90 degrees, it's daytime
+                if (angle < 90) {
+                    hexes.push({
+                        lat: lat,
+                        lng: lng,
+                        intensity: Math.cos(angle * Math.PI / 180) // Brighter near subsolar point
+                    });
+                }
+            }
+        }
+        
+        return hexes;
+    }
+
+    calculateSolarAngle(lat, lng, sunPos) {
+        // Convert to radians
+        const lat1 = lat * Math.PI / 180;
+        const lng1 = lng * Math.PI / 180;
+        const lat2 = sunPos.lat * Math.PI / 180;
+        const lng2 = sunPos.lng * Math.PI / 180;
+        
+        // Great circle distance (solar zenith angle)
+        const angle = Math.acos(
+            Math.sin(lat1) * Math.sin(lat2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2 - lng1)
+        );
+        
+        return angle * 180 / Math.PI;
+    }
+
     // ----------------------------------------------------------------
     // Globe setup
     // ----------------------------------------------------------------
     createGlobe() {
         const el = document.getElementById('globeViz');
         if (!el) throw new Error('#globeViz element not found');
-
-        // Initialize solar position for current time
-        const sunPos = this.getSunPosition(new Date());
-        this.solarTile = { pos: [sunPos.lng, sunPos.lat] };
 
         this.globe = Globe()
             (el)
@@ -110,20 +146,15 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
-            // Solar Terminator (day/night overlay)
-            .tilesData([this.solarTile])
-            .tileLng(d => d.pos[0])
-            .tileLat(d => d.pos[1])
-            .tileAltitude(0.01)
-            .tileWidth(180)
-            .tileHeight(180)
-            .tileUseGlobeProjection(false)
-            .tileMaterial(() => new this.globe.scene().__THREE.MeshLambertMaterial({ 
-                color: '#ffff00', 
-                opacity: 0.2, 
-                transparent: true 
-            }))
-            .tilesTransitionDuration(0)
+            // Daytime hexagons (terminator effect)
+            .hexBinPointsData(this.generateDaySideHexes())
+            .hexBinPointLat('lat')
+            .hexBinPointLng('lng')
+            .hexBinPointWeight('intensity')
+            .hexAltitude(0.001)
+            .hexTopColor(() => 'rgba(255, 255, 100, 0.3)')
+            .hexSideColor(() => 'rgba(255, 255, 100, 0.15)')
+            .hexBinResolution(4)
             // Device dots
             .pointsData(this.devices)
             .pointLat('lat')
@@ -168,9 +199,8 @@ class SacredGlobe {
     // ----------------------------------------------------------------
     startTerminatorAnimation() {
         const updateTerminator = () => {
-            const sunPos = this.getSunPosition(new Date());
-            this.solarTile.pos = [sunPos.lng, sunPos.lat];
-            this.globe.tilesData([this.solarTile]);
+            const hexes = this.generateDaySideHexes();
+            this.globe.hexBinPointsData(hexes);
         };
 
         // Update every 60 seconds (terminator moves slowly)
