@@ -118,17 +118,11 @@ class SacredGlobe {
             .tileWidth(180)
             .tileHeight(180)
             .tileUseGlobeProjection(false)
-            .tileMaterial(() => {
-                // Create a slightly transparent yellow overlay for daytime
-                if (typeof THREE !== 'undefined') {
-                    return new THREE.MeshLambertMaterial({ 
-                        color: '#ffff00', 
-                        opacity: 0.2, 
-                        transparent: true 
-                    });
-                }
-                return null;
-            })
+            .tileMaterial(() => new this.globe.scene().__THREE.MeshLambertMaterial({ 
+                color: '#ffff00', 
+                opacity: 0.2, 
+                transparent: true 
+            }))
             .tilesTransitionDuration(0)
             // Device dots
             .pointsData(this.devices)
