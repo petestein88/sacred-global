@@ -6,6 +6,7 @@ class SacredGlobe {
         this.globe         = null;
         this.devices       = [];
         this._refreshTimer = null;
+        this.solarTile     = null; // For terminator
 
         this.init();
     }
@@ -26,6 +27,7 @@ class SacredGlobe {
             this.createGlobe();
             this.setupControls();
             this.updateStats();
+            this.startTerminatorAnimation();
             this._refreshTimer = setInterval(() => this.refreshData(), 30_000);
 
             // Hide loading indicator
@@ -66,11 +68,38 @@ class SacredGlobe {
     }
 
     // ----------------------------------------------------------------
+    // Solar calculations for terminator line
+    // ----------------------------------------------------------------
+    getSunPosition(date) {
+        // Simplified solar position calculation
+        const startOfYear = new Date(date.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((date - startOfYear) / 86400000);
+        
+        // Solar declination (Earth's tilt)
+        const declination = -23.44 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
+        
+        // Solar hour angle (Earth's rotation)
+        const hours = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
+        const seconds = date.getUTCSeconds();
+        const hoursDecimal = hours + minutes / 60 + seconds / 3600;
+        
+        // Convert to longitude (-180 to 180)
+        const longitude = (hoursDecimal / 24) * 360 - 180;
+        
+        return { lat: declination, lng: longitude };
+    }
+
+    // ----------------------------------------------------------------
     // Globe setup
     // ----------------------------------------------------------------
     createGlobe() {
         const el = document.getElementById('globeViz');
         if (!el) throw new Error('#globeViz element not found');
+
+        // Initialize solar position for current time
+        const sunPos = this.getSunPosition(new Date());
+        this.solarTile = { pos: [sunPos.lng, sunPos.lat] };
 
         this.globe = Globe()
             (el)
@@ -81,6 +110,26 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
+            // Solar Terminator (day/night overlay)
+            .tilesData([this.solarTile])
+            .tileLng(d => d.pos[0])
+            .tileLat(d => d.pos[1])
+            .tileAltitude(0.01)
+            .tileWidth(180)
+            .tileHeight(180)
+            .tileUseGlobeProjection(false)
+            .tileMaterial(() => {
+                // Create a slightly transparent yellow overlay for daytime
+                if (typeof THREE !== 'undefined') {
+                    return new THREE.MeshLambertMaterial({ 
+                        color: '#ffff00', 
+                        opacity: 0.2, 
+                        transparent: true 
+                    });
+                }
+                return null;
+            })
+            .tilesTransitionDuration(0)
             // Device dots
             .pointsData(this.devices)
             .pointLat('lat')
@@ -118,6 +167,20 @@ class SacredGlobe {
                 .width(el.clientWidth)
                 .height(el.clientHeight);
         });
+    }
+
+    // ----------------------------------------------------------------
+    // Terminator animation (updates in real-time)
+    // ----------------------------------------------------------------
+    startTerminatorAnimation() {
+        const updateTerminator = () => {
+            const sunPos = this.getSunPosition(new Date());
+            this.solarTile.pos = [sunPos.lng, sunPos.lat];
+            this.globe.tilesData([this.solarTile]);
+        };
+
+        // Update every 60 seconds (terminator moves slowly)
+        setInterval(updateTerminator, 60000);
     }
 
     // ----------------------------------------------------------------
