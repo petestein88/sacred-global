@@ -40,7 +40,7 @@ class SacredGlobe {
     }
 
     // ----------------------------------------------------------------
-    // Data  —  swap loadDevices() for fetch() when backend is ready
+    // Data  — swap loadDevices() for fetch() when backend is ready
     // ----------------------------------------------------------------
     async loadDevices() {
         // TODO: replace with fetch('https://api.sacred.systems/devices')
@@ -81,25 +81,40 @@ class SacredGlobe {
         return { lat: declination, lng: longitude };
     }
 
-    // Generate terminator line coordinates
+    // Generate terminator line coordinates (improved calculation)
     generateTerminatorLine() {
         const sunPos = this.getSunPosition(new Date());
         const points = [];
         
-        // Generate points along the terminator (90 degrees from sun)
-        for (let lng = -180; lng <= 180; lng += 1) {
-            // Calculate latitude where sun angle is 90 degrees (on horizon)
-            const lngRad = (lng - sunPos.lng) * Math.PI / 180;
+        console.log('[Terminator] Sun position:', sunPos);
+        
+        // Generate points along the terminator circle
+        for (let i = 0; i <= 360; i += 2) {
+            const angle = i * Math.PI / 180;
+            
+            // Calculate point 90 degrees from sun position
             const sunLatRad = sunPos.lat * Math.PI / 180;
+            const sunLngRad = sunPos.lng * Math.PI / 180;
             
-            // Using spherical geometry to find terminator
-            const lat = Math.atan(-Math.cos(lngRad) / Math.tan(sunLatRad)) * 180 / Math.PI;
+            // Terminator is a great circle 90 degrees from sun
+            const lat = Math.asin(
+                Math.sin(sunLatRad) * Math.cos(Math.PI / 2) +
+                Math.cos(sunLatRad) * Math.sin(Math.PI / 2) * Math.cos(angle)
+            ) * 180 / Math.PI;
             
-            if (!isNaN(lat) && Math.abs(lat) <= 90) {
-                points.push({ lat, lng });
+            const lng = sunLngRad + Math.atan2(
+                Math.sin(angle) * Math.sin(Math.PI / 2) * Math.cos(sunLatRad),
+                Math.cos(Math.PI / 2) - Math.sin(sunLatRad) * Math.sin(lat * Math.PI / 180)
+            );
+            
+            const lngDeg = ((lng * 180 / Math.PI + 540) % 360) - 180;
+            
+            if (!isNaN(lat) && !isNaN(lngDeg)) {
+                points.push({ lat, lng: lngDeg });
             }
         }
         
+        console.log('[Terminator] Generated', points.length, 'points');
         return points;
     }
 
@@ -110,6 +125,8 @@ class SacredGlobe {
         const el = document.getElementById('globeViz');
         if (!el) throw new Error('#globeViz element not found');
 
+        const terminatorLine = this.generateTerminatorLine();
+
         this.globe = Globe()
             (el)
             // Textures
@@ -119,10 +136,10 @@ class SacredGlobe {
             // Atmosphere — Sacred Gold glow
             .atmosphereColor('#FFCC00')
             .atmosphereAltitude(0.12)
-            // Terminator line
-            .pathsData([this.generateTerminatorLine()])
-            .pathColor(() => 'rgba(255, 204, 0, 0.6)')
-            .pathStroke(1.5)
+            // Terminator line - bright and thick
+            .pathsData([terminatorLine])
+            .pathColor(() => '#FFCC00')
+            .pathStroke(3)
             .pathDashLength(1)
             .pathDashGap(0)
             .pathDashAnimateTime(0)
